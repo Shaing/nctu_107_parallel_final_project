@@ -1,22 +1,13 @@
-Q := @
-OS := $(shell uname)
-ifeq ($(OS),Darwin)
-	CC := gcc-8
-else
-	CC := gcc
-endif
-CFLAGS := -std=c11
-LDFLAGS := -lm
-SRC	:= $(wildcard *.c)
-OUT	:= mlp
+CC=gcc
+CFLAGS=-std=gnu99
+LDFLAGS=-lm
+OBJS=mlp.o
 
-.PHONY: all clean
+%.o:%.c
+	$(CC) -c -o $@ $< $(CFLAGS)
 
-all: $(OUT)
-$(OUT):	$(SRC)
-	$(Q) echo "make $(OUT)"
-	$(Q) $(CC) $(CFLAGS) $(LDFLAGS) $(SRC) -o $(OUT) 	
+mlp:$(OBJS)
+	$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS)
 
 clean:
-	$(Q) echo "clean $(OUT)"
-	$(Q) rm $(OUT) *.o 
+	rm *.o mlp
