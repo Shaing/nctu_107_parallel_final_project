@@ -82,10 +82,13 @@ def main(_argv):
 	k_noutdim = 1
 
 	wkj = np.random.random((k_noutdim, j_nhid_1))
+	print('wkj.shape: {}'.format(wkj.shape))
 	wkj_temp = np.zeros(wkj.shape)
 	wji = np.random.random((j_nhid, i_nhid_1))
+	print('wji.shape: {}'.format(wji.shape))
 	wji_temp = np.zeros(wji.shape)
 	wib = np.random.random((i_nhid, b_ninpdim_1))
+	print('wib.shape: {}'.format(wib.shape))
 
 	old_delwkj = np.zeros((k_noutdim, j_nhid_1))
 	old_delwji = np.zeros((j_nhid, i_nhid_1))
