@@ -19,9 +19,39 @@ typedef struct _NN_PARAMETER
 	int j_hi_nodes_1;
 	int k_output_nodes;
 
+	float lower_limit;
+	int iter_max;
+	float eta;
+	float beta;
+	int batch;
+	float _iter;
+	int iter_loop;
+	float error_avg;
 }NN_PARAMETER;
 
+static NN_PARAMETER nn_para = 
+{
+	500,
+	2,
+	3,
+	20,
+	21,
+	5,
+	6,
+	1,
+	0.001,
+	30000,
+	0.1,
+	0.3,
+	64,
+	0,
+	0,
+	100
+};
+
 int main() {
+
+/* test pattern */
 
 	int i;
 
@@ -30,6 +60,14 @@ int main() {
 
 	for(i=0 ; i <250 ; i++)
 		printf("pattern:( %f , %f )\r\n", X2[i], Y2[i]);
+
+/* initialize */
+
+	nn_para.b_input_nodes_1 = nn_para.b_input_nodes + 1;
+	nn_para.i_hi_nodes_1 = nn_para.i_hi_nodes + 1;
+	nn_para.j_hi_nodes_1 = nn_para.j_hi_nodes + 1;
+
+	printf("[debg] input_size:%d, error_avg:%.02f\n", nn_para.input_size ,nn_para.error_avg);
 
 	return 0;
 }
