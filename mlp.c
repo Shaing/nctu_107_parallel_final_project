@@ -66,6 +66,19 @@ int main() {
 	for(i=0 ; i <250 ; i++)
 		printf("pattern:( %f , %f )\r\n", X2[i], Y2[i]);
 
+/* MLP initialization for demo using normalDistributionGenerator() */
+	float _wkj[nn_para.k_output_nodes][nn_para.j_hi_nodes_1];
+	float _wkj_temp[nn_para.k_output_nodes][nn_para.j_hi_nodes_1];
+
+	printf("size of wkj = %lu\r\n",sizeof(_wkj));
+
+	/* Testing */
+	for(i=0;i<nn_para.k_output_nodes;i++)
+		for(j=0;j<nn_para.j_hi_nodes_1;j++) {
+			normalDistributionGenerator(&_wkj[i][j]);
+			printf("wkj[%d][%d] = %f \r\n", i, j, _wkj[i][j]);
+		}
+
 /* initialize */
 
 	nn_para.b_input_nodes_1 = nn_para.b_input_nodes + 1;
@@ -75,7 +88,7 @@ int main() {
 	printf("[debg] input_size:%d, error_avg:%.02f\n", nn_para.input_size ,nn_para.error_avg);
 
 /* initialize arrays */
-	double* wkj = (double*)malloc(nn_para.k_output_nodes * nn_para.j_hi_nodes_1 * sizeof(double));
+	float* wkj = (float*)malloc(nn_para.k_output_nodes * nn_para.j_hi_nodes_1 * sizeof(float));
 	for (int k = 0; k < nn_para.k_output_nodes; ++k)
 		for (int j = 0; j < nn_para.j_hi_nodes_1; ++j)
 		{
@@ -84,33 +97,59 @@ int main() {
 			 * 	AH: rand func need to use normal distribution which means we can't use rand() 
 			 * 		and need to write normal distribution func.
 			 */
-			wkj[(k * j) + j] = rand() / (double)RAND_MAX; // here need to modify
-			printf("[wkj] %.02f\n", wkj[(k * j) + j]);
+			normalDistributionGenerator(&wkj[(k * j) + j]);
+			printf("[wkj][%d][%d] %.02f\n", k, j, wkj[(k * j) + j]);
 		}
 
-	double* wkj_temp = (double*)malloc(nn_para.k_output_nodes * nn_para.j_hi_nodes_1 * sizeof(double));
-	double* wji = (double*)malloc(nn_para.j_hi_nodes * nn_para.i_hi_nodes_1 * sizeof(double));
-	double* wji_temp = (double*)malloc(nn_para.j_hi_nodes * nn_para.i_hi_nodes_1 * sizeof(double));
-	double* wib = (double*)malloc(nn_para.i_hi_nodes * nn_para.b_input_nodes_1 * sizeof(double));
+	float* wkj_temp = (float*)malloc(nn_para.k_output_nodes * nn_para.j_hi_nodes_1 * sizeof(float));
+	float* wji = (float*)malloc(nn_para.j_hi_nodes * nn_para.i_hi_nodes_1 * sizeof(float));
+	float* wji_temp = (float*)malloc(nn_para.j_hi_nodes * nn_para.i_hi_nodes_1 * sizeof(float));
+	float* wib = (float*)malloc(nn_para.i_hi_nodes * nn_para.b_input_nodes_1 * sizeof(float));
 
-	double* old_delwkj = (double*)malloc(nn_para.k_output_nodes * nn_para.j_hi_nodes_1 * sizeof(double));
-	double* old_delwji = (double*)malloc(nn_para.j_hi_nodes * nn_para.i_hi_nodes_1 * sizeof(double));
-	double* old_delwib = (double*)malloc(nn_para.i_hi_nodes * nn_para.b_input_nodes_1 * sizeof(double));
+	float* old_delwkj = (float*)malloc(nn_para.k_output_nodes * nn_para.j_hi_nodes_1 * sizeof(float));
+	float* old_delwji = (float*)malloc(nn_para.j_hi_nodes * nn_para.i_hi_nodes_1 * sizeof(float));
+	float* old_delwib = (float*)malloc(nn_para.i_hi_nodes * nn_para.b_input_nodes_1 * sizeof(float));
 
-	double* ob = (double*)malloc(nn_para.b_input_nodes_1 * sizeof(double));
+/** notice col or row vector
+	ob = np.empty((b_ninpdim_1, 1))
+	ob[-1] = 1
+	si = np.zeros((i_nhid, 1))
+	oi = np.zeros((i_nhid_1, 1))
+	oi[-1] = 1
+	sj = np.zeros((j_nhid, 1))
+	oj = np.zeros((j_nhid_1, 1))
+	oj[-1] = 1
+	sk = np.zeros((k_noutdim, 1))
+	ok = np.zeros(sk.shape)
+	dk = np.zeros((k_noutdim, 1))
+ */
+
+	float* ob = (float*)malloc(nn_para.b_input_nodes_1 * sizeof(float));
 	ob[nn_para.b_input_nodes_1 - 1] = 1;
 	for (int b = 0; b < nn_para.b_input_nodes_1; ++b)
 		printf("[ob] %.02f\n", ob[b]);
-	double* si = (double*)malloc(nn_para.i_hi_nodes * sizeof(double));
-	double* oi = (double*)malloc(nn_para.i_hi_nodes_1 * sizeof(double));
+	float* si = (float*)malloc(nn_para.i_hi_nodes * sizeof(float));
+	float* oi = (float*)malloc(nn_para.i_hi_nodes_1 * sizeof(float));
 	oi[nn_para.i_hi_nodes_1 - 1] = 1;
-	double* sj = (double*)malloc(nn_para.j_hi_nodes * sizeof(double));
-	double* oj = (double*)malloc(nn_para.j_hi_nodes_1 * sizeof(double));
+	float* sj = (float*)malloc(nn_para.j_hi_nodes * sizeof(float));
+	float* oj = (float*)malloc(nn_para.j_hi_nodes_1 * sizeof(float));
 	oj[nn_para.j_hi_nodes_1 - 1] = 1;
-	double* sk = (double*)malloc(nn_para.k_output_nodes * sizeof(double));
-	double* ok = (double*)malloc(nn_para.k_output_nodes * sizeof(double));
-	double* dk = (double*)malloc(nn_para.k_output_nodes * sizeof(double));
+	float* sk = (float*)malloc(nn_para.k_output_nodes * sizeof(float));
+	float* ok = (float*)malloc(nn_para.k_output_nodes * sizeof(float));
+	float* dk = (float*)malloc(nn_para.k_output_nodes * sizeof(float));
 
+/** notice col or row vector
+	delta_k = np.zeros((1, k_noutdim))
+	sum_back_kj = np.zeros((1, j_nhid))
+	delta_j = np.zeros((1, j_nhid))
+	sum_back_ji = np.zeros((1, i_nhid))
+	delta_i = np.zeros((1, i_nhid))
+ */
+	float* delta_k = (float*)malloc(nn_para.k_output_nodes * sizeof(float));
+	float* sum_back_kj = (float*)malloc(nn_para.j_hi_nodes * sizeof(float));
+	float* delta_j = (float*)malloc(nn_para.j_hi_nodes * sizeof(float));
+	float* sum_back_ji = (float*)malloc(nn_para.i_hi_nodes * sizeof(float));
+	float* delta_i = (float*)malloc(nn_para.i_hi_nodes * sizeof(float));
 
 	free(wkj);
 	free(wkj_temp);
@@ -128,20 +167,11 @@ int main() {
 	free(sk);
 	free(ok);
 	free(dk);
-
-/* MLP initialization */
-	// float wkj[nn_para.k_output_nodes][nn_para.j_hi_nodes_1];
-	// float wkj_temp[nn_para.k_output_nodes][nn_para.j_hi_nodes_1];
-
-	// printf("size of wkj = %lu\r\n",sizeof(wkj));
-
-	// /* Testing */
-	// for(i=0;i<nn_para.k_output_nodes;i++)
-	// 	for(j=0;j<nn_para.j_hi_nodes_1;j++) {
-	// 		normalDistributionGenerator(&wkj[i][j]);
-	// 		printf("wkj[%d][%d] = %f \r\n", i, j, wkj[i][j]);
-	// 	}
-
+	free(delta_k);
+	free(sum_back_kj);
+	free(delta_j);
+	free(sum_back_ji);
+	free(delta_i);
 
 	return 0;
 }
