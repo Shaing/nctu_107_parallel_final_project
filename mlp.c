@@ -358,6 +358,68 @@ int main() {
 		printf("[iter] %.d, [error_avg] %.06f\n", nn_para._iter, nn_para.error_avg);
 	}
 
+	int fail_cnt = 0;
+	for (int ivector = 0; ivector < nn_para.input_size; ++ivector)
+	{
+		error = 0.0;
+		ob[0] = c[ivector].X;	
+		ob[1] = c[ivector].Y;	
+		ob[2] = 1;
+		dk[0] = c[ivector].c;
+		// printf("[debug] it:%d, ivector:%d, %f, %f, %f\n", it, ivector, ob[0], ob[1], dk[0]);
+
+		/* Forward Computation */
+		/* wib, si, oi */
+		for (int i = 0; i < nn_para.i_hi_nodes; ++i)
+		{
+			si[i] = dot(&wib[i], ob, nn_para.b_input_nodes_1);
+			// printf("[debug] si[%d]:%.02f\n", i, si[i]);
+		}
+		for (int i = 0; i < nn_para.i_hi_nodes; ++i)
+		{
+			oi[i] = sigmoidal(si[i]);
+			// printf("[debug] oi[%d]:%.02f\n", i, oi[i]);
+		}
+		oi[nn_para.i_hi_nodes_1 - 1] = 1.0;
+
+		/* wji, sj, oj */
+		for (int j = 0; j < nn_para.j_hi_nodes; ++j)
+		{
+			sj[j] = dot(&wji[j], oi, nn_para.i_hi_nodes_1);
+			// printf("[debug] sj[%d]:%.02f\n", j, sj[j]);
+		}
+		for (int j = 0; j < nn_para.j_hi_nodes; ++j)
+		{
+			oj[j] = sigmoidal(sj[j]);
+			// printf("[debug] oj[%d]:%.02f\n", j, oj[j]);
+		}
+		oj[nn_para.j_hi_nodes_1 - 1] = 1.0;
+
+		/* wki, sk, ok */
+		for (int k = 0; k < nn_para.k_output_nodes; ++k)
+		{
+			sk[k] = dot(&wkj[k], oj, nn_para.j_hi_nodes_1);
+			// printf("[debug] sk[%d]:%.02f\n", k, sk[k]);
+		}
+		for (int k = 0; k < nn_para.k_output_nodes; ++k)
+		{
+			ok[k] = sigmoidal(sk[k]);
+			// printf("[debug] ok[%d]:%.02f\n", k, ok[k]);
+		}
+
+		error_sum = 0;
+		for (int d = 0; d < nn_para.k_output_nodes; ++d)
+		{
+			error_sum += fabs(dk[d] - ok[d]);
+			// printf("[debud] error_sum:%.02f\n", error_sum);
+		}
+		error += error_sum;
+		if (error > 0.5)
+			++fail_cnt; 
+		// printf("[debud_inference] error:%.02f, fail rate:%.02f, %s\n", error, (float)fail_cnt/nn_para.input_size, error < 0.5 ? "hit" : "fail");
+	}
+	printf("[inference_result] pass rate:%.02f, fail rate:%.02f", (float)(nn_para.input_size - fail_cnt)/nn_para.input_size, (float)fail_cnt/nn_para.input_size);
+
 	// print_LL(error_r);
 	free_LL(&ite);
 	free_LL(&error_r);
