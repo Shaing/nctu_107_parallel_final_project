@@ -55,29 +55,30 @@ static NN_PARAMETER nn_para =
 };
 
 void normalDistributionGenerator(float* x);
+void init_input_weight(float* _w, int fl, int sl); // fl: first layer, sl: second layer
 
 int main() {
-	int i, j;
 
 /* test pattern */
-	for(i=0 ; i <250 ; i++)
-		printf("pattern:( %f , %f )\r\n", X1[i], Y1[i]);
+	// int i, j;
+	// for(i=0 ; i <250 ; i++)
+	// 	printf("pattern:( %f , %f )\r\n", X1[i], Y1[i]);
 
-	for(i=0 ; i <250 ; i++)
-		printf("pattern:( %f , %f )\r\n", X2[i], Y2[i]);
+	// for(i=0 ; i <250 ; i++)
+	// 	printf("pattern:( %f , %f )\r\n", X2[i], Y2[i]);
 
 /* MLP initialization for demo using normalDistributionGenerator() */
-	float _wkj[nn_para.k_output_nodes][nn_para.j_hi_nodes_1];
-	float _wkj_temp[nn_para.k_output_nodes][nn_para.j_hi_nodes_1];
+	// float _wkj[nn_para.k_output_nodes][nn_para.j_hi_nodes_1];
+	// float _wkj_temp[nn_para.k_output_nodes][nn_para.j_hi_nodes_1];
 
-	printf("size of wkj = %lu\r\n",sizeof(_wkj));
+	// printf("size of wkj = %lu\r\n",sizeof(_wkj));
 
-	/* Testing */
-	for(i=0;i<nn_para.k_output_nodes;i++)
-		for(j=0;j<nn_para.j_hi_nodes_1;j++) {
-			normalDistributionGenerator(&_wkj[i][j]);
-			printf("wkj[%d][%d] = %f \r\n", i, j, _wkj[i][j]);
-		}
+	// /* Testing */
+	// for(i=0;i<nn_para.k_output_nodes;i++)
+	// 	for(j=0;j<nn_para.j_hi_nodes_1;j++) {
+	// 		normalDistributionGenerator(&_wkj[i][j]);
+	// 		printf("wkj[%d][%d] = %f \r\n", i, j, _wkj[i][j]);
+	// 	}
 
 /* initialize */
 
@@ -85,32 +86,23 @@ int main() {
 	nn_para.i_hi_nodes_1 = nn_para.i_hi_nodes + 1;
 	nn_para.j_hi_nodes_1 = nn_para.j_hi_nodes + 1;
 
-	printf("[debg] input_size:%d, error_avg:%.02f\n", nn_para.input_size ,nn_para.error_avg);
+	// printf("[debg] input_size:%d, error_avg:%.02f\n", nn_para.input_size ,nn_para.error_avg);
 
 /* initialize arrays */
 	float* wkj = (float*)malloc(nn_para.k_output_nodes * nn_para.j_hi_nodes_1 * sizeof(float));
-	for (int k = 0; k < nn_para.k_output_nodes; ++k)
-		for (int j = 0; j < nn_para.j_hi_nodes_1; ++j)
-		{
-			/**
-			 * TODO:
-			 * 	AH: rand func need to use normal distribution which means we can't use rand() 
-			 * 		and need to write normal distribution func.
-			 */
-			normalDistributionGenerator(&wkj[(k * j) + j]);
-			printf("[wkj][%d][%d] %.02f\n", k, j, wkj[(k * j) + j]);
-		}
-
+	init_input_weight(wkj, nn_para.k_output_nodes, nn_para.j_hi_nodes_1);
 	float* wkj_temp = (float*)malloc(nn_para.k_output_nodes * nn_para.j_hi_nodes_1 * sizeof(float));
 	float* wji = (float*)malloc(nn_para.j_hi_nodes * nn_para.i_hi_nodes_1 * sizeof(float));
+	init_input_weight(wji, nn_para.j_hi_nodes, nn_para.i_hi_nodes_1);
 	float* wji_temp = (float*)malloc(nn_para.j_hi_nodes * nn_para.i_hi_nodes_1 * sizeof(float));
 	float* wib = (float*)malloc(nn_para.i_hi_nodes * nn_para.b_input_nodes_1 * sizeof(float));
+	init_input_weight(wib, nn_para.i_hi_nodes, nn_para.b_input_nodes_1);
 
 	float* old_delwkj = (float*)malloc(nn_para.k_output_nodes * nn_para.j_hi_nodes_1 * sizeof(float));
 	float* old_delwji = (float*)malloc(nn_para.j_hi_nodes * nn_para.i_hi_nodes_1 * sizeof(float));
 	float* old_delwib = (float*)malloc(nn_para.i_hi_nodes * nn_para.b_input_nodes_1 * sizeof(float));
 
-/** notice col or row vector
+/** Reference notice col or row vector
 	ob = np.empty((b_ninpdim_1, 1))
 	ob[-1] = 1
 	si = np.zeros((i_nhid, 1))
@@ -138,7 +130,7 @@ int main() {
 	float* ok = (float*)malloc(nn_para.k_output_nodes * sizeof(float));
 	float* dk = (float*)malloc(nn_para.k_output_nodes * sizeof(float));
 
-/** notice col or row vector
+/** Reference notice col or row vector
 	delta_k = np.zeros((1, k_noutdim))
 	sum_back_kj = np.zeros((1, j_nhid))
 	delta_j = np.zeros((1, j_nhid))
@@ -192,5 +184,18 @@ void normalDistributionGenerator(float* x){
 
 	seed++;
 
+	return;
+}
+
+void init_input_weight(float* _w, int fl, int sl) // fl: first layer, sl: second layer
+{
+	for (int x = 0; x < fl; ++x)
+	{
+		for (int y = 0; y < sl; ++y)
+		{
+			normalDistributionGenerator(&_w[(x * y) + y]);
+			printf("[init_input_weight][%d][%d] %.02f\n", x, y, _w[(x * y) + y]);
+		}
+	}
 	return;
 }
