@@ -73,6 +73,7 @@ def main(_argv):
 
 	''' initialize '''
 	nvectors = c.shape[0] # row size of input pattern
+	print('[nvecrors] {}'.format(nvectors))
 	b_ninpdim = 2
 	b_ninpdim_1 = b_ninpdim + 1
 	i_nhid = 20
