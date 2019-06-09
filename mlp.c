@@ -81,7 +81,7 @@ static NN_PARAMETER nn_para =
 	0.001,
 	5000,
 	0.1,
-	0.2,
+	0.3,
 	64,
 	0,
 	0,
