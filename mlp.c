@@ -242,15 +242,16 @@ int main() {
 
 				/* Forward Computation */
 				/* wib, si, oi */
+				int i;
 				#pragma omp parallel for
-				for (int i = 0; i < nn_para.i_hi_nodes; ++i)
+				for (i = 0; i < nn_para.i_hi_nodes; ++i)
 				{
 					si[i] = dot(&wib[i], ob, nn_para.b_input_nodes_1);
 					// printf("[debug] si[%d]:%.02f\n", i, si[i]);
 				}
 
 				#pragma omp parallel for
-				for (int i = 0; i < nn_para.i_hi_nodes; ++i)
+				for (i = 0; i < nn_para.i_hi_nodes; ++i)
 				{
 					oi[i] = sigmoidal(si[i]);
 					// printf("[debug] oi[%d]:%.02f\n", i, oi[i]);
@@ -258,15 +259,16 @@ int main() {
 				oi[nn_para.i_hi_nodes_1 - 1] = 1.0;
 
 				/* wji, sj, oj */
+				int j;
 				#pragma omp parallel for
-				for (int j = 0; j < nn_para.j_hi_nodes; ++j)
+				for (j = 0; j < nn_para.j_hi_nodes; ++j)
 				{
 					sj[j] = dot(&wji[j], oi, nn_para.i_hi_nodes_1);
 					// printf("[debug] sj[%d]:%.02f\n", j, sj[j]);
 				}
 
 				#pragma omp parallel for
-				for (int j = 0; j < nn_para.j_hi_nodes; ++j)
+				for (j = 0; j < nn_para.j_hi_nodes; ++j)
 				{
 					oj[j] = sigmoidal(sj[j]);
 					// printf("[debug] oj[%d]:%.02f\n", j, oj[j]);
@@ -274,21 +276,23 @@ int main() {
 				oj[nn_para.j_hi_nodes_1 - 1] = 1.0;
 
 				/* wki, sk, ok */
-				for (int k = 0; k < nn_para.k_output_nodes; ++k)
+				int k;
+				for (k = 0; k < nn_para.k_output_nodes; ++k)
 				{
 					sk[k] = dot(&wkj[k], oj, nn_para.j_hi_nodes_1);
 					// printf("[debug] sk[%d]:%.02f\n", k, sk[k]);
 				}
 
-				for (int k = 0; k < nn_para.k_output_nodes; ++k)
+				for (k = 0; k < nn_para.k_output_nodes; ++k)
 				{
 					ok[k] = sigmoidal(sk[k]);
 					// printf("[debug] ok[%d]:%.02f\n", k, ok[k]);
 				}
 
 				error_sum = 0;
+				int d;
 				#pragma omp parallel for reduction (+:error_sum)
-				for (int d = 0; d < nn_para.k_output_nodes; ++d)
+				for (d = 0; d < nn_para.k_output_nodes; ++d)
 				{
 					error_sum = error_sum + fabs(dk[d] - ok[d]);
 					// printf("[debud] error_sum:%.02f\n", error_sum);
@@ -298,15 +302,15 @@ int main() {
 
 				/* Backward learning */
 				/* ok -> oj */
-				for (int d = 0; d < nn_para.k_output_nodes; ++d)
+				for (d = 0; d < nn_para.k_output_nodes; ++d)
 				{
 					delta_k[d] = (dk[d] - ok[d]) * ok[d] * (1.0 - ok[d]); 
 					// printf("[debug] delta_k[%d]:%.02f\n", d, delta_k[d]);
 				}
 				
-				for (int j = 0; j < nn_para.j_hi_nodes_1; ++j)
+				for (j = 0; j < nn_para.j_hi_nodes_1; ++j)
 				{
-					for (int k = 0; k < nn_para.k_output_nodes; ++k)
+					for (k = 0; k < nn_para.k_output_nodes; ++k)
 					{
 						wkj_temp[(k * j) + j] = wkj[(k * j) + j] + \
 												(nn_para.eta * delta_k[k] * oj[j]) + \
@@ -319,10 +323,10 @@ int main() {
 				}
 
 				#pragma omp parallel for reduction (+:_sum_back_kj)
-				for (int j = 0; j < nn_para.j_hi_nodes; ++j)
+				for (j = 0; j < nn_para.j_hi_nodes; ++j)
 				{
 					_sum_back_kj = 0.0;
-					for (int k = 0; k < nn_para.k_output_nodes; ++k)
+					for (k = 0; k < nn_para.k_output_nodes; ++k)
 					{
 						// sum_back_kj[j] = sum_back_kj[j] + (delta_k[k] * wkj[(k * j) + j]);
 						_sum_back_kj = _sum_back_kj + (delta_k[k] * wkj[(k * j) + j]);
@@ -333,17 +337,17 @@ int main() {
 
 				/* oj -> oi */
 				#pragma omp parallel for
-				for (int j = 0; j < nn_para.j_hi_nodes; ++j)
+				for (j = 0; j < nn_para.j_hi_nodes; ++j)
 				{
 					/* sig */
 					delta_j[j] = oj[j] * (1.0 - oj[j]) * sum_back_kj[j];
 					// printf("[debug] delta_j[%d]:%.02f\n", j, delta_j[j]);
 				}
 
-				for (int i = 0; i < nn_para.i_hi_nodes_1; ++i)
+				for (i = 0; i < nn_para.i_hi_nodes_1; ++i)
 				{
 					#pragma omp parallel for
-					for (int j = 0; j < nn_para.j_hi_nodes; ++j)
+					for (j = 0; j < nn_para.j_hi_nodes; ++j)
 					{
 						wji_temp[(j * i) + i] = wji[(j * i) + i] + \
 												(nn_para.eta * delta_j[j] * oi[i]) + \
@@ -356,11 +360,11 @@ int main() {
 				}
 
 				#pragma omp parallel for reduction (+:_sum_back_ji)
-				for (int i = 0; i < nn_para.i_hi_nodes; ++i)
+				for (i = 0; i < nn_para.i_hi_nodes; ++i)
 				{
 					// sum_back_ji[i] = 0.0;
 					_sum_back_ji = 0.0;
-					for (int j = 0; j < nn_para.j_hi_nodes; ++j)
+					for (j = 0; j < nn_para.j_hi_nodes; ++j)
 					{
 						// sum_back_ji[i] = sum_back_ji[i] + (delta_j[j] * wji[(j * i) + i]);
 						_sum_back_ji = _sum_back_ji + (delta_j[j] * wji[(j * i) + i]);
@@ -371,17 +375,18 @@ int main() {
 
 				/* oi -> ob */
 				#pragma omp parallel for
-				for (int i = 0; i < nn_para.i_hi_nodes; ++i)
+				for (i = 0; i < nn_para.i_hi_nodes; ++i)
 				{
 					/* sig */
 					delta_i[i] = oi[i] * (1.0 - oi[i]) * sum_back_ji[i];
 					// printf("[debug] delta_i[%d]:%.02f\n", i, delta_i[i]);
 				}
 
-				for (int b = 0; b < nn_para.b_input_nodes_1; ++b)
+				int b;
+				for (b = 0; b < nn_para.b_input_nodes_1; ++b)
 				{
 					#pragma omp parallel for
-					for (int i = 0; i < nn_para.i_hi_nodes; ++i)
+					for (i = 0; i < nn_para.i_hi_nodes; ++i)
 					{
 						wib[(i * b) + b] = wib[(i * b) + b] + \
 												(nn_para.eta * delta_i[i] * ob[b]) + \
@@ -536,8 +541,9 @@ float dot(float* a, float* b, int n)
 {
 	float sum = 0;
 
+	int i;
 	#pragma omp parallel for reduction (+:sum)
-	for (int i = 0; i < n; ++i)
+	for (i = 0; i < n; ++i)
 		sum += a[i] * b[i];
 
 	return sum;
