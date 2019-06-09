@@ -73,7 +73,7 @@ static NN_PARAMETER nn_para =
 	500,
 	2,
 	3,
-	20,
+	40,
 	21,
 	10,
 	11,
@@ -291,7 +291,7 @@ int main() {
 
 				error_sum = 0;
 				int d;
-				#pragma omp parallel for reduction (+:error_sum)
+				// #pragma omp parallel for reduction (+:error_sum)
 				for (d = 0; d < nn_para.k_output_nodes; ++d)
 				{
 					error_sum = error_sum + fabs(dk[d] - ok[d]);
@@ -308,6 +308,7 @@ int main() {
 					// printf("[debug] delta_k[%d]:%.02f\n", d, delta_k[d]);
 				}
 				
+				#pragma omp parallel for collapse(2)
 				for (j = 0; j < nn_para.j_hi_nodes_1; ++j)
 				{
 					for (k = 0; k < nn_para.k_output_nodes; ++k)
@@ -322,6 +323,7 @@ int main() {
 					}
 				}
 
+				#pragma omp parallel for
 				for (j = 0; j < nn_para.j_hi_nodes; ++j)
 				{
 					_sum_back_kj = 0.0;
@@ -344,9 +346,9 @@ int main() {
 					// printf("[debug] delta_j[%d]:%.02f\n", j, delta_j[j]);
 				}
 
+				#pragma omp parallel for collapse(2)
 				for (i = 0; i < nn_para.i_hi_nodes_1; ++i)
 				{
-					#pragma omp parallel for
 					for (j = 0; j < nn_para.j_hi_nodes; ++j)
 					{
 						wji_temp[(j * i) + i] = wji[(j * i) + i] + \
@@ -359,6 +361,7 @@ int main() {
 					}
 				}
 
+				#pragma omp parallel for
 				for (i = 0; i < nn_para.i_hi_nodes; ++i)
 				{
 					// sum_back_ji[i] = 0.0;
@@ -383,9 +386,10 @@ int main() {
 				}
 
 				int b;
+				#pragma omp parallel for collapse(2)
 				for (b = 0; b < nn_para.b_input_nodes_1; ++b)
 				{
-					#pragma omp parallel for
+					// #pragma omp parallel for
 					for (i = 0; i < nn_para.i_hi_nodes; ++i)
 					{
 						wib[(i * b) + b] = wib[(i * b) + b] + \
