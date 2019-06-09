@@ -4,3 +4,6 @@ log.txt
 mlp
 .vscode/ipch/a9f6c27b5c2117ad/mlp.ipch
 .vscode/ipch/a9f6c27b5c2117ad/mmap_address.bin
+
+*.ipch
+*.bin
