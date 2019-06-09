@@ -6,6 +6,7 @@
 #include <omp.h>
 
 #define NUM_THREADS 4
+#define PAD 16
 
 /* class 1, desire output = 0 */
 float X1[250] = {-12.4623,-11.1655,-15.2563,-12.1321,-12.6710,-14.2918,-13.4107,-12.6262,-9.3809,-10.1790,-14.2863,-9.8882,-12.1831,-12.9557,-12.1608,-13.0621,-12.9617,-11.3270,-11.3855,-11.3540,-12.0752,-13.9283,-11.9766,-11.0353,-12.1471,-11.5706,-11.8465,-12.8437,-12.2121,-13.2577,-11.5453,-13.5429,-13.4257,-13.1260,-15.2194,-10.7942,-11.8637,-12.8989,-10.7277,-13.7624,-12.1049,-12.1947,-11.5836,-11.5384,-12.6635,-11.7749,-11.8549,-11.0065,-10.4840,-10.4100,-12.3239,-11.3228,-12.5533,-12.3906,-11.2208,-9.6173,-11.8546,-10.6475,-11.1775,-9.7666,-11.9042,-10.7128,-10.1221,-9.5025,-8.9864,-10.3713,-11.8746,-11.0502,-11.2935,-7.8047,-10.6932,-9.2511,-10.1124,-8.9514,-10.5241,-11.0800,-11.0179,-9.0243,-9.6062,-9.5405,-7.8400,-8.8819,-8.8893,-7.4123,-9.7167,-8.1273,-7.8999,-8.8891,-8.3396,-9.6304,-9.5213,-8.1767,-7.4670,-5.5109,-8.6700,-7.7220,-7.8975,-9.6534,-8.0642,-9.3243,-6.5933,-8.2254,-7.1406,-7.6881,-6.7426,-7.5488,-6.3604,-6.0127,-4.9415,-6.7487,-8.5938,-7.1956,-4.9019,-7.2288,-5.0958,-5.8325,-4.4196,-7.7168,-5.8530,-6.7625,-2.5460,-4.5279,-3.8733,-6.2096,-5.5191,-5.2220,-3.7502,-5.0256,-3.9453,-6.5979,-4.7992,-5.1682,-5.8212,-3.6357,-3.7614,-3.9098,-5.1770,-2.6160,-3.2938,-3.8437,-3.4226,-3.6086,-4.9982,-3.4353,-3.8829,-3.9330,-4.0128,-3.2929,-4.6653,-1.6021,-1.9503,-2.3948,-2.3144,-2.9831,-1.0720,-2.1301,-2.6181,-0.4594,-1.9432,-2.2157,-1.8292,-2.2927,-2.4747,1.2610,0.4794,-0.7802,-2.2571,-1.7784,-1.0030,0.0507,-1.9876,-2.9011,-1.9366,-0.0710,0.0691,0.2109,-0.2903,0.1037,-0.4770,0.9396,-1.2065,0.6870,-0.5408,0.0481,1.0100,1.5697,-0.5146,1.9353,1.4055,0.7473,0.6888,0.7343,0.7158,1.1079,1.2012,2.0401,2.8040,1.8061,1.1905,2.0854,1.7025,0.5475,2.5834,1.9971,1.8800,2.3139,2.1127,0.9613,1.7910,1.8566,1.5189,3.7801,1.2683,1.7051,1.5206,1.1009,2.1243,2.0827,3.9259,2.1847,1.4062,4.1094,3.7750,2.3438,1.0992,2.1914,2.5096,2.9699,2.4597,3.1901,3.1631,1.5439,1.8687,2.0964,2.3493,2.5549,2.9051,-0.1207,2.4661,4.1789,1.8818,3.8930,3.3191,2.9481,3.1665,1.4248,2.9097,4.6014,3.0977,3.0414};
@@ -73,7 +74,7 @@ static NN_PARAMETER nn_para =
 	500,
 	2,
 	3,
-	40,
+	20,
 	21,
 	10,
 	11,
@@ -151,6 +152,7 @@ void normalDistributionGenerator(float* x);
 void init_input_weight(float* _w, int fl, int sl); // fl: first layer, sl: second layer
 
 float dot(float* a, float* b, int n);
+float pdot(float* a, float* b, int n, int pad);
 float sigmoidal(float data){ return 1 / (1 + exp(-data)); }
 
 int main() {
@@ -199,21 +201,21 @@ int main() {
 	ob[nn_para.b_input_nodes_1 - 1] = 1;
 	// for (int b = 0; b < nn_para.b_input_nodes_1; ++b)
 	// 	printf("[ob] %.02f\n", ob[b]);
-	float* si = (float*)malloc(nn_para.i_hi_nodes * sizeof(float));
-	float* oi = (float*)malloc(nn_para.i_hi_nodes_1 * sizeof(float));
-	oi[nn_para.i_hi_nodes_1 - 1] = 1;
-	float* sj = (float*)malloc(nn_para.j_hi_nodes * sizeof(float));
-	float* oj = (float*)malloc(nn_para.j_hi_nodes_1 * sizeof(float));
-	oj[nn_para.j_hi_nodes_1 - 1] = 1;
+	float* si = (float*)malloc(nn_para.i_hi_nodes * PAD * sizeof(float));
+	float* oi = (float*)malloc(nn_para.i_hi_nodes_1 * PAD * sizeof(float));
+	oi[(nn_para.i_hi_nodes_1 * PAD) - 1] = 1;
+	float* sj = (float*)malloc(nn_para.j_hi_nodes * PAD * sizeof(float));
+	float* oj = (float*)malloc(nn_para.j_hi_nodes_1 * PAD * sizeof(float));
+	oj[(nn_para.j_hi_nodes_1 * PAD) - 1] = 1;
 	float* sk = (float*)malloc(nn_para.k_output_nodes * sizeof(float));
 	float* ok = (float*)malloc(nn_para.k_output_nodes * sizeof(float));
 	float* dk = (float*)malloc(nn_para.k_output_nodes * sizeof(float));
 
 	float* delta_k = (float*)malloc(nn_para.k_output_nodes * sizeof(float));
-	float* sum_back_kj = (float*)malloc(nn_para.j_hi_nodes * sizeof(float));
-	float* delta_j = (float*)malloc(nn_para.j_hi_nodes * sizeof(float));
-	float* sum_back_ji = (float*)malloc(nn_para.i_hi_nodes * sizeof(float));
-	float* delta_i = (float*)malloc(nn_para.i_hi_nodes * sizeof(float));
+	float* sum_back_kj = (float*)malloc(nn_para.j_hi_nodes * PAD * sizeof(float));
+	float* delta_j = (float*)malloc(nn_para.j_hi_nodes * PAD * sizeof(float));
+	float* sum_back_ji = (float*)malloc(nn_para.i_hi_nodes * PAD * sizeof(float));
+	float* delta_i = (float*)malloc(nn_para.i_hi_nodes * PAD * sizeof(float));
 
 	LL_NODE* ite = (LL_NODE*)malloc(sizeof(LL_NODE));
 	LL_NODE* error_r = (LL_NODE*)malloc(sizeof(LL_NODE));
@@ -246,40 +248,42 @@ int main() {
 				#pragma omp parallel for
 				for (i = 0; i < nn_para.i_hi_nodes; ++i)
 				{
-					si[i] = dot(&wib[i], ob, nn_para.b_input_nodes_1);
+					si[i * PAD] = dot(&wib[i], ob, nn_para.b_input_nodes_1);
 					// printf("[debug] si[%d]:%.02f\n", i, si[i]);
 				}
 
 				#pragma omp parallel for
 				for (i = 0; i < nn_para.i_hi_nodes; ++i)
 				{
-					oi[i] = sigmoidal(si[i]);
+					oi[i * PAD] = sigmoidal(si[i * PAD]);
 					// printf("[debug] oi[%d]:%.02f\n", i, oi[i]);
 				}
-				oi[nn_para.i_hi_nodes_1 - 1] = 1.0;
+				oi[(nn_para.i_hi_nodes_1 * PAD) - 1] = 1.0;
 
 				/* wji, sj, oj */
 				int j;
 				#pragma omp parallel for
 				for (j = 0; j < nn_para.j_hi_nodes; ++j)
 				{
-					sj[j] = dot(&wji[j], oi, nn_para.i_hi_nodes_1);
+					// sj[j] = dot(&wji[j], oi, nn_para.i_hi_nodes_1);
+					sj[j * PAD] = pdot(&wji[j], oi, nn_para.i_hi_nodes_1, PAD);
 					// printf("[debug] sj[%d]:%.02f\n", j, sj[j]);
 				}
 
 				#pragma omp parallel for
 				for (j = 0; j < nn_para.j_hi_nodes; ++j)
 				{
-					oj[j] = sigmoidal(sj[j]);
+					oj[j * PAD] = sigmoidal(sj[j * PAD]);
 					// printf("[debug] oj[%d]:%.02f\n", j, oj[j]);
 				}
-				oj[nn_para.j_hi_nodes_1 - 1] = 1.0;
+				oj[(nn_para.j_hi_nodes_1 * PAD) - 1] = 1.0;
 
 				/* wki, sk, ok */
 				int k;
 				for (k = 0; k < nn_para.k_output_nodes; ++k)
 				{
-					sk[k] = dot(&wkj[k], oj, nn_para.j_hi_nodes_1);
+					// sk[k] = dot(&wkj[k], oj, nn_para.j_hi_nodes_1);
+					sk[k] = pdot(&wkj[k], oj, nn_para.j_hi_nodes_1, PAD);
 					// printf("[debug] sk[%d]:%.02f\n", k, sk[k]);
 				}
 
@@ -314,9 +318,9 @@ int main() {
 					for (k = 0; k < nn_para.k_output_nodes; ++k)
 					{
 						wkj_temp[(k * j) + j] = wkj[(k * j) + j] + \
-												(nn_para.eta * delta_k[k] * oj[j]) + \
+												(nn_para.eta * delta_k[k] * oj[j * PAD]) + \
 												(nn_para.beta * old_delwkj[(k * j) + j]);
-						old_delwkj[(k * j) + j] = (nn_para.eta * delta_k[k] * oj[j]) + \
+						old_delwkj[(k * j) + j] = (nn_para.eta * delta_k[k] * oj[j * PAD]) + \
 													(nn_para.beta * old_delwkj[(k * j) + j]);
 						// printf("[debug] wkj_temp[%d][%d]:%.02f, old_delwkj[%d][%d]:%.02f\n", 
 						// 		k, j, wkj_temp[(k * j) + j], k, j, old_delwkj[(k * j) + j]);
@@ -334,7 +338,7 @@ int main() {
 						_sum_back_kj = _sum_back_kj + (delta_k[k] * wkj[(k * j) + j]);
 						// printf("[debug] sum_back_kj[%d]:%.02f\n", j, sum_back_kj[j]);
 					}
-					sum_back_kj[j] = _sum_back_kj;
+					sum_back_kj[j * PAD] = _sum_back_kj;
 				}
 
 				/* oj -> oi */
@@ -342,7 +346,7 @@ int main() {
 				for (j = 0; j < nn_para.j_hi_nodes; ++j)
 				{
 					/* sig */
-					delta_j[j] = oj[j] * (1.0 - oj[j]) * sum_back_kj[j];
+					delta_j[j] = oj[j * PAD] * (1.0 - oj[j * PAD]) * sum_back_kj[j * PAD];
 					// printf("[debug] delta_j[%d]:%.02f\n", j, delta_j[j]);
 				}
 
@@ -352,9 +356,9 @@ int main() {
 					for (j = 0; j < nn_para.j_hi_nodes; ++j)
 					{
 						wji_temp[(j * i) + i] = wji[(j * i) + i] + \
-												(nn_para.eta * delta_j[j] * oi[i]) + \
+												(nn_para.eta * delta_j[j] * oi[i * PAD]) + \
 												(nn_para.beta * old_delwji[(j * i) + i]);
-						old_delwji[(j * i) + i] = (nn_para.eta * delta_j[j] * oi[i]) + \
+						old_delwji[(j * i) + i] = (nn_para.eta * delta_j[j] * oi[i * PAD]) + \
 													(nn_para.beta * old_delwji[(j * i) + i]);
 						// printf("[debug] wji_temp[%d][%d]:%.02f, old_delwji[%d][%d]:%.02f\n", 
 						// 		j, i, wji_temp[(j * i) + i], j, i, old_delwji[(j * i) + i]);
@@ -370,10 +374,10 @@ int main() {
 					for (j = 0; j < nn_para.j_hi_nodes; ++j)
 					{
 						// sum_back_ji[i] = sum_back_ji[i] + (delta_j[j] * wji[(j * i) + i]);
-						_sum_back_ji = _sum_back_ji + (delta_j[j] * wji[(j * i) + i]);
+						_sum_back_ji = _sum_back_ji + (delta_j[j * PAD] * wji[(j * i) + i]);
 						// printf("[debug] sum_back_ji[%d]:%.02f\n", i, sum_back_ji[i]);
 					}
-					sum_back_ji[i] = _sum_back_ji;
+					sum_back_ji[i * PAD] = _sum_back_ji;
 				}
 
 				/* oi -> ob */
@@ -381,7 +385,7 @@ int main() {
 				for (i = 0; i < nn_para.i_hi_nodes; ++i)
 				{
 					/* sig */
-					delta_i[i] = oi[i] * (1.0 - oi[i]) * sum_back_ji[i];
+					delta_i[i * PAD] = oi[i * PAD] * (1.0 - oi[i * PAD]) * sum_back_ji[i * PAD];
 					// printf("[debug] delta_i[%d]:%.02f\n", i, delta_i[i]);
 				}
 
@@ -432,33 +436,35 @@ int main() {
 		/* wib, si, oi */
 		for (int i = 0; i < nn_para.i_hi_nodes; ++i)
 		{
-			si[i] = dot(&wib[i], ob, nn_para.b_input_nodes_1);
+			si[i * PAD] = dot(&wib[i], ob, nn_para.b_input_nodes_1);
 			// printf("[debug] si[%d]:%.02f\n", i, si[i]);
 		}
 		for (int i = 0; i < nn_para.i_hi_nodes; ++i)
 		{
-			oi[i] = sigmoidal(si[i]);
+			oi[i * PAD] = sigmoidal(si[i * PAD]);
 			// printf("[debug] oi[%d]:%.02f\n", i, oi[i]);
 		}
-		oi[nn_para.i_hi_nodes_1 - 1] = 1.0;
+		oi[(nn_para.i_hi_nodes_1 * PAD) - 1] = 1.0;
 
 		/* wji, sj, oj */
 		for (int j = 0; j < nn_para.j_hi_nodes; ++j)
 		{
-			sj[j] = dot(&wji[j], oi, nn_para.i_hi_nodes_1);
+			// sj[j] = dot(&wji[j], oi, nn_para.i_hi_nodes_1);
+			sj[j * PAD] = pdot(&wji[j], oi, nn_para.i_hi_nodes_1, PAD);
 			// printf("[debug] sj[%d]:%.02f\n", j, sj[j]);
 		}
 		for (int j = 0; j < nn_para.j_hi_nodes; ++j)
 		{
-			oj[j] = sigmoidal(sj[j]);
+			oj[j * PAD] = sigmoidal(sj[j * PAD]);
 			// printf("[debug] oj[%d]:%.02f\n", j, oj[j]);
 		}
-		oj[nn_para.j_hi_nodes_1 - 1] = 1.0;
+		oj[(nn_para.j_hi_nodes_1 * PAD) - 1] = 1.0;
 
 		/* wki, sk, ok */
 		for (int k = 0; k < nn_para.k_output_nodes; ++k)
 		{
-			sk[k] = dot(&wkj[k], oj, nn_para.j_hi_nodes_1);
+			// sk[k] = dot(&wkj[k], oj, nn_para.j_hi_nodes_1);
+			sk[k] = pdot(&wkj[k], oj, nn_para.j_hi_nodes_1, PAD);
 			// printf("[debug] sk[%d]:%.02f\n", k, sk[k]);
 		}
 		for (int k = 0; k < nn_para.k_output_nodes; ++k)
@@ -549,6 +555,18 @@ float dot(float* a, float* b, int n)
 	#pragma omp parallel for reduction (+:sum)
 	for (i = 0; i < n; ++i)
 		sum += a[i] * b[i];
+
+	return sum;
+}
+
+float pdot(float* a, float* b, int n, int pad)
+{
+	float sum = 0;
+
+	int i;
+	#pragma omp parallel for reduction (+:sum)
+	for (i = 0; i < n; ++i)
+		sum += a[i] * b[i * pad];
 
 	return sum;
 }
