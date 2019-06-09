@@ -70,10 +70,10 @@ static NN_PARAMETER nn_para =
 	500,
 	2,
 	3,
-	10,
-	11,
-	2,
-	3,
+	200,
+	201,
+	100,
+	101,
 	1,
 	0.001,
 	30000,
@@ -220,6 +220,7 @@ int main() {
 					si[i] = dot(&wib[i], ob, nn_para.b_input_nodes_1);
 					// printf("[debug] si[%d]:%.02f\n", i, si[i]);
 				}
+
 				for (int i = 0; i < nn_para.i_hi_nodes; ++i)
 				{
 					oi[i] = sigmoidal(si[i]);
@@ -233,6 +234,7 @@ int main() {
 					sj[j] = dot(&wji[j], oi, nn_para.i_hi_nodes_1);
 					// printf("[debug] sj[%d]:%.02f\n", j, sj[j]);
 				}
+
 				for (int j = 0; j < nn_para.j_hi_nodes; ++j)
 				{
 					oj[j] = sigmoidal(sj[j]);
@@ -418,7 +420,7 @@ int main() {
 			++fail_cnt; 
 		// printf("[debud_inference] error:%.02f, fail rate:%.02f, %s\n", error, (float)fail_cnt/nn_para.input_size, error < 0.5 ? "hit" : "fail");
 	}
-	printf("[inference_result] pass rate:%.02f, fail rate:%.02f", (float)(nn_para.input_size - fail_cnt)/nn_para.input_size, (float)fail_cnt/nn_para.input_size);
+	printf("[inference_result] pass rate:%.02f, fail rate:%.02f\n", (float)(nn_para.input_size - fail_cnt)/nn_para.input_size, (float)fail_cnt/nn_para.input_size);
 
 	// print_LL(error_r);
 	free_LL(&ite);
