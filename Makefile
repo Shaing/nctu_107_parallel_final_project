@@ -4,7 +4,7 @@ ifeq ($(OS),Darwin)
 else
 	CC=gcc
 endif
-CFLAGS=-std=gnu99
+CFLAGS=-std=gnu99 -fopenmp
 LDFLAGS=-lm -fopenmp
 OBJS=mlp.o
 
