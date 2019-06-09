@@ -73,15 +73,15 @@ static NN_PARAMETER nn_para =
 	500,
 	2,
 	3,
-	20,
+	30,
 	21,
-	10,
+	20,
 	11,
 	1,
 	0.001,
-	6000,
+	5000,
 	0.1,
-	0.3,
+	0.2,
 	64,
 	0,
 	0,
@@ -322,10 +322,10 @@ int main() {
 					}
 				}
 
-				#pragma omp parallel for reduction (+:_sum_back_kj)
 				for (j = 0; j < nn_para.j_hi_nodes; ++j)
 				{
 					_sum_back_kj = 0.0;
+					#pragma omp parallel for reduction (+:_sum_back_kj)
 					for (k = 0; k < nn_para.k_output_nodes; ++k)
 					{
 						// sum_back_kj[j] = sum_back_kj[j] + (delta_k[k] * wkj[(k * j) + j]);
@@ -359,11 +359,11 @@ int main() {
 					}
 				}
 
-				#pragma omp parallel for reduction (+:_sum_back_ji)
 				for (i = 0; i < nn_para.i_hi_nodes; ++i)
 				{
 					// sum_back_ji[i] = 0.0;
 					_sum_back_ji = 0.0;
+					#pragma omp parallel for reduction (+:_sum_back_ji)
 					for (j = 0; j < nn_para.j_hi_nodes; ++j)
 					{
 						// sum_back_ji[i] = sum_back_ji[i] + (delta_j[j] * wji[(j * i) + i]);
