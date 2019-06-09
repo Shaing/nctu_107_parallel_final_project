@@ -5,7 +5,7 @@ else
 	CC=gcc
 endif
 CFLAGS=-std=gnu99
-LDFLAGS=-lm
+LDFLAGS=-lm -fopenmp
 OBJS=mlp.o
 
 %.o:%.c

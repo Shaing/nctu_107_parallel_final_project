@@ -3,6 +3,7 @@
 #include <math.h>
 #include <time.h>
 #include <string.h>
+#include <omp.h>
 
 /* class 1, desire output = 0 */
 float X1[250] = {-12.4623,-11.1655,-15.2563,-12.1321,-12.6710,-14.2918,-13.4107,-12.6262,-9.3809,-10.1790,-14.2863,-9.8882,-12.1831,-12.9557,-12.1608,-13.0621,-12.9617,-11.3270,-11.3855,-11.3540,-12.0752,-13.9283,-11.9766,-11.0353,-12.1471,-11.5706,-11.8465,-12.8437,-12.2121,-13.2577,-11.5453,-13.5429,-13.4257,-13.1260,-15.2194,-10.7942,-11.8637,-12.8989,-10.7277,-13.7624,-12.1049,-12.1947,-11.5836,-11.5384,-12.6635,-11.7749,-11.8549,-11.0065,-10.4840,-10.4100,-12.3239,-11.3228,-12.5533,-12.3906,-11.2208,-9.6173,-11.8546,-10.6475,-11.1775,-9.7666,-11.9042,-10.7128,-10.1221,-9.5025,-8.9864,-10.3713,-11.8746,-11.0502,-11.2935,-7.8047,-10.6932,-9.2511,-10.1124,-8.9514,-10.5241,-11.0800,-11.0179,-9.0243,-9.6062,-9.5405,-7.8400,-8.8819,-8.8893,-7.4123,-9.7167,-8.1273,-7.8999,-8.8891,-8.3396,-9.6304,-9.5213,-8.1767,-7.4670,-5.5109,-8.6700,-7.7220,-7.8975,-9.6534,-8.0642,-9.3243,-6.5933,-8.2254,-7.1406,-7.6881,-6.7426,-7.5488,-6.3604,-6.0127,-4.9415,-6.7487,-8.5938,-7.1956,-4.9019,-7.2288,-5.0958,-5.8325,-4.4196,-7.7168,-5.8530,-6.7625,-2.5460,-4.5279,-3.8733,-6.2096,-5.5191,-5.2220,-3.7502,-5.0256,-3.9453,-6.5979,-4.7992,-5.1682,-5.8212,-3.6357,-3.7614,-3.9098,-5.1770,-2.6160,-3.2938,-3.8437,-3.4226,-3.6086,-4.9982,-3.4353,-3.8829,-3.9330,-4.0128,-3.2929,-4.6653,-1.6021,-1.9503,-2.3948,-2.3144,-2.9831,-1.0720,-2.1301,-2.6181,-0.4594,-1.9432,-2.2157,-1.8292,-2.2927,-2.4747,1.2610,0.4794,-0.7802,-2.2571,-1.7784,-1.0030,0.0507,-1.9876,-2.9011,-1.9366,-0.0710,0.0691,0.2109,-0.2903,0.1037,-0.4770,0.9396,-1.2065,0.6870,-0.5408,0.0481,1.0100,1.5697,-0.5146,1.9353,1.4055,0.7473,0.6888,0.7343,0.7158,1.1079,1.2012,2.0401,2.8040,1.8061,1.1905,2.0854,1.7025,0.5475,2.5834,1.9971,1.8800,2.3139,2.1127,0.9613,1.7910,1.8566,1.5189,3.7801,1.2683,1.7051,1.5206,1.1009,2.1243,2.0827,3.9259,2.1847,1.4062,4.1094,3.7750,2.3438,1.0992,2.1914,2.5096,2.9699,2.4597,3.1901,3.1631,1.5439,1.8687,2.0964,2.3493,2.5549,2.9051,-0.1207,2.4661,4.1789,1.8818,3.8930,3.3191,2.9481,3.1665,1.4248,2.9097,4.6014,3.0977,3.0414};
@@ -197,6 +198,9 @@ int main() {
 	int bi = 0;
 	int tot_it = (int)nn_para.input_size / nn_para.batch;
 	float error_sum = 0.0;
+	float _sum_back_kj = 0.0;
+	float _sum_back_ji = 0.0;
+	float _sum_back_ib = 0.0;
 	while (nn_para.error_avg > nn_para.lower_limit && nn_para._iter < nn_para.iter_max)
 	{
 		++nn_para._iter;
@@ -215,12 +219,14 @@ int main() {
 
 				/* Forward Computation */
 				/* wib, si, oi */
+				#pragma omp parallel for
 				for (int i = 0; i < nn_para.i_hi_nodes; ++i)
 				{
 					si[i] = dot(&wib[i], ob, nn_para.b_input_nodes_1);
 					// printf("[debug] si[%d]:%.02f\n", i, si[i]);
 				}
 
+				#pragma omp parallel for
 				for (int i = 0; i < nn_para.i_hi_nodes; ++i)
 				{
 					oi[i] = sigmoidal(si[i]);
@@ -229,12 +235,14 @@ int main() {
 				oi[nn_para.i_hi_nodes_1 - 1] = 1.0;
 
 				/* wji, sj, oj */
+				#pragma omp parallel for
 				for (int j = 0; j < nn_para.j_hi_nodes; ++j)
 				{
 					sj[j] = dot(&wji[j], oi, nn_para.i_hi_nodes_1);
 					// printf("[debug] sj[%d]:%.02f\n", j, sj[j]);
 				}
 
+				#pragma omp parallel for
 				for (int j = 0; j < nn_para.j_hi_nodes; ++j)
 				{
 					oj[j] = sigmoidal(sj[j]);
@@ -248,6 +256,7 @@ int main() {
 					sk[k] = dot(&wkj[k], oj, nn_para.j_hi_nodes_1);
 					// printf("[debug] sk[%d]:%.02f\n", k, sk[k]);
 				}
+
 				for (int k = 0; k < nn_para.k_output_nodes; ++k)
 				{
 					ok[k] = sigmoidal(sk[k]);
@@ -255,9 +264,10 @@ int main() {
 				}
 
 				error_sum = 0;
+				#pragma omp parallel for reduction (+:error_sum)
 				for (int d = 0; d < nn_para.k_output_nodes; ++d)
 				{
-					error_sum += fabs(dk[d] - ok[d]);
+					error_sum = error_sum + fabs(dk[d] - ok[d]);
 					// printf("[debud] error_sum:%.02f\n", error_sum);
 				}
 				error += error_sum;
@@ -285,17 +295,21 @@ int main() {
 					}
 				}
 
+				#pragma omp parallel for reduction (+:_sum_back_kj)
 				for (int j = 0; j < nn_para.j_hi_nodes; ++j)
 				{
-					sum_back_kj[j] = 0.0;
+					_sum_back_kj = 0.0;
 					for (int k = 0; k < nn_para.k_output_nodes; ++k)
 					{
-						sum_back_kj[j] = sum_back_kj[j] + (delta_k[k] * wkj[(k * j) + j]);
+						// sum_back_kj[j] = sum_back_kj[j] + (delta_k[k] * wkj[(k * j) + j]);
+						_sum_back_kj = _sum_back_kj + (delta_k[k] * wkj[(k * j) + j]);
 						// printf("[debug] sum_back_kj[%d]:%.02f\n", j, sum_back_kj[j]);
 					}
+					sum_back_kj[j] = _sum_back_kj;
 				}
 
 				/* oj -> oi */
+				#pragma omp parallel for
 				for (int j = 0; j < nn_para.j_hi_nodes; ++j)
 				{
 					/* sig */
@@ -305,6 +319,7 @@ int main() {
 
 				for (int i = 0; i < nn_para.i_hi_nodes_1; ++i)
 				{
+					#pragma omp parallel for
 					for (int j = 0; j < nn_para.j_hi_nodes; ++j)
 					{
 						wji_temp[(j * i) + i] = wji[(j * i) + i] + \
@@ -317,17 +332,22 @@ int main() {
 					}
 				}
 
+				#pragma omp parallel for reduction (+:_sum_back_ji)
 				for (int i = 0; i < nn_para.i_hi_nodes; ++i)
 				{
-					sum_back_ji[i] = 0.0;
+					// sum_back_ji[i] = 0.0;
+					_sum_back_ji = 0.0;
 					for (int j = 0; j < nn_para.j_hi_nodes; ++j)
 					{
-						sum_back_ji[i] = sum_back_ji[i] + (delta_j[j] * wji[(j * i) + i]);
+						// sum_back_ji[i] = sum_back_ji[i] + (delta_j[j] * wji[(j * i) + i]);
+						_sum_back_ji = _sum_back_ji + (delta_j[j] * wji[(j * i) + i]);
 						// printf("[debug] sum_back_ji[%d]:%.02f\n", i, sum_back_ji[i]);
 					}
+					sum_back_ji[i] = _sum_back_ji;
 				}
 
 				/* oi -> ob */
+				#pragma omp parallel for
 				for (int i = 0; i < nn_para.i_hi_nodes; ++i)
 				{
 					/* sig */
@@ -337,6 +357,7 @@ int main() {
 
 				for (int b = 0; b < nn_para.b_input_nodes_1; ++b)
 				{
+					#pragma omp parallel for
 					for (int i = 0; i < nn_para.i_hi_nodes; ++i)
 					{
 						wib[(i * b) + b] = wib[(i * b) + b] + \
@@ -486,6 +507,8 @@ void init_input_weight(float* _w, int fl, int sl) // fl: first layer, sl: second
 float dot(float* a, float* b, int n)
 {
 	float sum = 0;
+
+	#pragma omp parallel for reduction (+:sum)
 	for (int i = 0; i < n; ++i)
 		sum += a[i] * b[i];
 
