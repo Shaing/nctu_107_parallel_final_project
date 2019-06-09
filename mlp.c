@@ -103,6 +103,25 @@ void print_LL(LL_NODE* head)
 	printf("\n");
 }
 
+int early_error_stop_LL(LL_NODE* head)
+{
+	float last_data = 0.0;
+	int cnt = 0;
+	LL_NODE* cur = head;
+	while (cur != NULL)
+	{
+		if (last_data == cur->data)
+		{
+			++cnt;
+			if (cnt >= 5)
+				return -1;
+		}
+		last_data = cur->data;
+		cur = cur->next;
+	}
+	return 1;
+}
+
 void insert_LL(LL_NODE* head, float val)
 {
 	LL_NODE* cur = head;
@@ -358,6 +377,11 @@ int main() {
 		insert_LL(ite, nn_para._iter);
 		insert_LL(error_r, nn_para.error_avg);
 		printf("[iter] %.d, [error_avg] %.06f\n", nn_para._iter, nn_para.error_avg);
+		if (nn_para._iter < 10 && early_error_stop_LL(error_r) == -1)
+		{
+			printf("Eraly error stop!\n");
+			break;
+		}
 	}
 
 	int fail_cnt = 0;
