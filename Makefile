@@ -1,10 +1,10 @@
 OS := $(shell uname)
 ifeq ($(OS),Darwin)
-	CC=gcc-8
+	CC=g++-8
 else
-	CC=gcc
+	CC=g++
 endif
-CFLAGS=-std=gnu99
+CFLAGS=-std=c++11
 LDFLAGS=-lm
 OBJS=mlp.o
 
