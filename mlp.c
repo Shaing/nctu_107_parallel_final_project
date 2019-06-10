@@ -73,13 +73,13 @@ static NN_PARAMETER nn_para =
 	500,
 	2,
 	3,
-	40,
-	21,
-	10,
-	11,
+	2000,
+	201,
+	100,
+	101,
 	1,
 	0.001,
-	5000,
+	500,
 	0.1,
 	0.3,
 	64,
@@ -308,7 +308,7 @@ int main() {
 					// printf("[debug] delta_k[%d]:%.02f\n", d, delta_k[d]);
 				}
 				
-				#pragma omp parallel for collapse(2)
+				// #pragma omp parallel for collapse(2)
 				for (j = 0; j < nn_para.j_hi_nodes_1; ++j)
 				{
 					for (k = 0; k < nn_para.k_output_nodes; ++k)
@@ -323,11 +323,11 @@ int main() {
 					}
 				}
 
-				#pragma omp parallel for
+				// #pragma omp parallel for
 				for (j = 0; j < nn_para.j_hi_nodes; ++j)
 				{
 					_sum_back_kj = 0.0;
-					#pragma omp parallel for reduction (+:_sum_back_kj)
+					// #pragma omp parallel for reduction (+:_sum_back_kj)
 					for (k = 0; k < nn_para.k_output_nodes; ++k)
 					{
 						// sum_back_kj[j] = sum_back_kj[j] + (delta_k[k] * wkj[(k * j) + j]);
@@ -346,7 +346,7 @@ int main() {
 					// printf("[debug] delta_j[%d]:%.02f\n", j, delta_j[j]);
 				}
 
-				#pragma omp parallel for collapse(2)
+				// #pragma omp parallel for collapse(2)
 				for (i = 0; i < nn_para.i_hi_nodes_1; ++i)
 				{
 					for (j = 0; j < nn_para.j_hi_nodes; ++j)
@@ -361,12 +361,12 @@ int main() {
 					}
 				}
 
-				#pragma omp parallel for
+				// #pragma omp parallel for
 				for (i = 0; i < nn_para.i_hi_nodes; ++i)
 				{
 					// sum_back_ji[i] = 0.0;
 					_sum_back_ji = 0.0;
-					#pragma omp parallel for reduction (+:_sum_back_ji)
+					// #pragma omp parallel for reduction (+:_sum_back_ji)
 					for (j = 0; j < nn_para.j_hi_nodes; ++j)
 					{
 						// sum_back_ji[i] = sum_back_ji[i] + (delta_j[j] * wji[(j * i) + i]);
@@ -386,7 +386,7 @@ int main() {
 				}
 
 				int b;
-				#pragma omp parallel for collapse(2)
+				// #pragma omp parallel for collapse(2)
 				for (b = 0; b < nn_para.b_input_nodes_1; ++b)
 				{
 					// #pragma omp parallel for
@@ -546,7 +546,7 @@ float dot(float* a, float* b, int n)
 	float sum = 0;
 
 	int i;
-	#pragma omp parallel for reduction (+:sum)
+	// #pragma omp parallel for reduction (+:sum)
 	for (i = 0; i < n; ++i)
 		sum += a[i] * b[i];
 
