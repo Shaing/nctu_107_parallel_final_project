@@ -197,8 +197,8 @@ int main() {
 	float* old_delwji = (float*)malloc(nn_para.j_hi_nodes * nn_para.i_hi_nodes_1 * sizeof(float));
 	float* old_delwib = (float*)malloc(nn_para.i_hi_nodes * nn_para.b_input_nodes_1 * sizeof(float));
 
-	float* ob = (float*)malloc(nn_para.b_input_nodes_1 * sizeof(float));
-	ob[nn_para.b_input_nodes_1 - 1] = 1;
+	float* ob = (float*)malloc(nn_para.b_input_nodes_1 * PAD * sizeof(float));
+	ob[(nn_para.b_input_nodes_1 * PAD) - 1] = 1;
 	// for (int b = 0; b < nn_para.b_input_nodes_1; ++b)
 	// 	printf("[ob] %.02f\n", ob[b]);
 	float* si = (float*)malloc(nn_para.i_hi_nodes * PAD * sizeof(float));
@@ -237,8 +237,8 @@ int main() {
 			for (int ivector = bi * nn_para.batch; ivector < nn_para.batch * (it + 1); ++ivector)
 			{
 				ob[0] = c[ivector].X;	
-				ob[1] = c[ivector].Y;	
-				ob[2] = 1;
+				ob[1 * PAD] = c[ivector].Y;	
+				ob[2 * PAD] = 1;
 				dk[0] = c[ivector].c;
 				// printf("[debug] it:%d, ivector:%d, %f, %f, %f\n", it, ivector, ob[0], ob[1], dk[0]);
 
@@ -248,7 +248,8 @@ int main() {
 				#pragma omp parallel for
 				for (i = 0; i < nn_para.i_hi_nodes; ++i)
 				{
-					si[i * PAD] = dot(&wib[i], ob, nn_para.b_input_nodes_1);
+					// si[i * PAD] = dot(&wib[i], ob, nn_para.b_input_nodes_1);
+					si[i * PAD] = pdot(&wib[i], ob, nn_para.b_input_nodes_1, PAD);
 					// printf("[debug] si[%d]:%.02f\n", i, si[i]);
 				}
 
@@ -397,9 +398,9 @@ int main() {
 					for (i = 0; i < nn_para.i_hi_nodes; ++i)
 					{
 						wib[(i * b) + b] = wib[(i * b) + b] + \
-												(nn_para.eta * delta_i[i] * ob[b]) + \
+												(nn_para.eta * delta_i[i] * ob[b * PAD]) + \
 												(nn_para.beta * old_delwib[(i * b) + b]);
-						old_delwib[(i * b) + b] = (nn_para.eta * delta_i[i] * ob[b]) + \
+						old_delwib[(i * b) + b] = (nn_para.eta * delta_i[i] * ob[b * PAD]) + \
 													(nn_para.beta * old_delwib[(i * b) + b]);
 						// printf("[debug] wib[%d][%d]:%.02f, old_delwib[%d][%d]:%.02f\n", 
 						// 		b, i, wib[(i * b) + b], b, i, old_delwib[(i * b) + b]);
@@ -427,8 +428,8 @@ int main() {
 	{
 		error = 0.0;
 		ob[0] = c[ivector].X;	
-		ob[1] = c[ivector].Y;	
-		ob[2] = 1;
+		ob[1 * PAD] = c[ivector].Y;	
+		ob[2 * PAD] = 1;
 		dk[0] = c[ivector].c;
 		// printf("[debug] it:%d, ivector:%d, %f, %f, %f\n", it, ivector, ob[0], ob[1], dk[0]);
 
@@ -436,7 +437,8 @@ int main() {
 		/* wib, si, oi */
 		for (int i = 0; i < nn_para.i_hi_nodes; ++i)
 		{
-			si[i * PAD] = dot(&wib[i], ob, nn_para.b_input_nodes_1);
+			// si[i * PAD] = dot(&wib[i], ob, nn_para.b_input_nodes_1);
+			si[i * PAD] = pdot(&wib[i], ob, nn_para.b_input_nodes_1, PAD);
 			// printf("[debug] si[%d]:%.02f\n", i, si[i]);
 		}
 		for (int i = 0; i < nn_para.i_hi_nodes; ++i)
